@@ -1,0 +1,63 @@
+#!/bin/bash
+# 毎時ちょうどに現在時刻を macOS 通知で知らせる（launchd で実行）
+# 使い方:
+#   chime  start   launchd に登録して開始（再起動後も自動で動く）
+#   chime  stop    launchd から外して停止
+#   chime  status  動いているか確認
+#   chime  now     今すぐ1回通知（launchd からもこれが呼ばれる）
+
+LABEL="com.$(id -un).chime"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+DOMAIN="gui/$(id -u)"
+SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+notify() {
+  osascript -e "display notification \"$(date '+%H:%M') です\" with title \"⏰ 時報\" sound name \"Glass\""
+}
+
+loaded() {
+  launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1
+}
+
+case "$1" in
+  start)
+    if loaded; then echo "すでに動いています"; exit 0; fi
+    mkdir -p "$(dirname "$PLIST")"
+    cat > "$PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$SELF</string>
+    <string>now</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Minute</key><integer>0</integer></dict>
+</dict>
+</plist>
+EOF
+    launchctl bootstrap "$DOMAIN" "$PLIST" && echo "開始しました（毎時0分に通知）"
+    ;;
+  stop)
+    if loaded; then
+      launchctl bootout "$DOMAIN/$LABEL"
+      echo "停止しました"
+    else
+      echo "動いていません"
+    fi
+    rm -f "$PLIST"
+    ;;
+  status)
+    if loaded; then echo "動いています"; else echo "停止中"; fi
+    ;;
+  now)
+    notify
+    ;;
+  *)
+    echo "使い方: chime [start|stop|status|now]" >&2
+    exit 1
+    ;;
+esac
