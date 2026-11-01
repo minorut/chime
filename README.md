@@ -7,6 +7,10 @@
 10:00 です
 ```
 
+## 動作環境
+
+- macOS 専用（`osascript` と `launchctl` を使うため）
+
 ## 仕組み
 
 - launchd の `StartCalendarInterval`（毎時0分）で `chime now` を実行する
@@ -18,7 +22,7 @@
 
 ```sh
 chmod +x chime
-ln -s "$PWD/chime" ~/bin/chime   # ~/bin が PATH に入っていること
+ln -s "$PWD/chime" ~/bin/chime   # ~/bin が PATH に入っていること（/usr/local/bin などでも可）
 chime start
 ```
 
@@ -46,3 +50,7 @@ chime now      # 今すぐ1回通知（テスト用）
 - システム設定 → 通知 で「スクリプトエディタ」の通知を許可する
 - 集中モード（おやすみモードなど）がオフか確認する
 - `launchctl print gui/$(id -u)/com.$(id -un).chime` で `last exit code` を確認する
+
+## ライセンス
+
+[MIT](LICENSE)
